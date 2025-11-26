@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/ochamekan/ms/metadata/internal/repository"
+	"github.com/ochamekan/ms/rating/internal/repository"
 	"github.com/ochamekan/ms/rating/pkg/model"
 )
 
