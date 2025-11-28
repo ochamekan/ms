@@ -20,7 +20,7 @@ func New(ctrl *rating.Controller) *Handler {
 	return &Handler{ctrl: ctrl}
 }
 
-func (h *Handler) GetAggregateRating(ctx context.Context, req *gen.GetAggregatedRatingRequest) (*gen.GetAggregatedRatingResponse, error) {
+func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregatedRatingRequest) (*gen.GetAggregatedRatingResponse, error) {
 	if req == nil || req.RecordId == "" || req.RecordType == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty id/type")
 	}
