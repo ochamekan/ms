@@ -5,14 +5,17 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"time"
 
+	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
 	"github.com/ochamekan/ms/rating/internal/controller/rating"
-	httphandler "github.com/ochamekan/ms/rating/internal/handler/http"
+	grpchandler "github.com/ochamekan/ms/rating/internal/handler/grpc"
 	"github.com/ochamekan/ms/rating/internal/repository/memory"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 const serviceName = "rating"
@@ -41,7 +44,6 @@ func main() {
 			if err := registry.ReportHealthyState(instanceID, serviceName); err != nil {
 				log.Println("Failed to report healthy state: " + err.Error())
 			}
-
 			time.Sleep(1 * time.Second)
 		}
 
@@ -50,10 +52,18 @@ func main() {
 
 	repo := memory.New()
 	ctrl := rating.New(repo)
-	h := httphandler.New(ctrl)
+	h := grpchandler.New(ctrl)
 
-	http.HandleFunc("/rating", h.Handle)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	srv := grpc.NewServer()
+	reflection.Register(srv)
+
+	gen.RegisterRatingServiceServer(srv, h)
+	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
 }

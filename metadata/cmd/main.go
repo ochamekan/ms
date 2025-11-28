@@ -5,14 +5,17 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"net/http"
+	"net"
 	"time"
 
+	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/metadata/internal/controller/metadata"
-	httphandler "github.com/ochamekan/ms/metadata/internal/handler/http"
+	grpchandler "github.com/ochamekan/ms/metadata/internal/handler/grpc"
 	"github.com/ochamekan/ms/metadata/internal/repository/memory"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 const serviceName = "metadata"
@@ -49,10 +52,16 @@ func main() {
 
 	repo := memory.New()
 	ctrl := metadata.New(repo)
-	h := httphandler.New(ctrl)
+	h := grpchandler.New(ctrl)
 
-	http.HandleFunc("/metadata", h.GetMetadata)
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+	srv := grpc.NewServer()
+	reflection.Register(srv)
+	gen.RegisterMetadataServiceServer(srv, h)
+	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
 }
