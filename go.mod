@@ -3,6 +3,7 @@ module github.com/ochamekan/ms
 go 1.25.4
 
 require (
+	github.com/confluentinc/confluent-kafka-go/v2 v2.12.0
 	github.com/hashicorp/consul/api v1.33.0
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.10

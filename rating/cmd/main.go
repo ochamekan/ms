@@ -13,6 +13,7 @@ import (
 	"github.com/ochamekan/ms/pkg/discovery"
 	"github.com/ochamekan/ms/rating/internal/controller/rating"
 	grpchandler "github.com/ochamekan/ms/rating/internal/handler/grpc"
+	"github.com/ochamekan/ms/rating/internal/ingester/kafka"
 	"github.com/ochamekan/ms/rating/internal/repository/memory"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -51,7 +52,18 @@ func main() {
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
 	repo := memory.New()
-	ctrl := rating.New(repo)
+
+	ingester, err := kafka.NewIngester("localhost", "rating", "ratings")
+	if err != nil {
+		log.Fatalf("failed to initialize ingester: %v", err)
+	}
+
+	ctrl := rating.New(repo, ingester)
+
+	if err := ctrl.StartIngestion(ctx); err != nil {
+		log.Fatalf("failed to start ingestion: %v", err)
+	}
+
 	h := grpchandler.New(ctrl)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
