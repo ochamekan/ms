@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/ochamekan/ms/rating/pkg/model"
 )
 
@@ -27,8 +27,7 @@ func main() {
 		panic(err)
 	}
 
-	topic := "rating"
-
+	topic := "ratings"
 	if err := produceRatingEvents(topic, producer, ratingEvents); err != nil {
 		panic(err)
 	}
@@ -54,8 +53,8 @@ func readRatingEvents(filename string) ([]model.RatingEvent, error) {
 }
 
 func produceRatingEvents(topic string, producer *kafka.Producer, events []model.RatingEvent) error {
-	for _, ratingEvent := range events {
-		encodedEvent, err := json.Marshal(ratingEvent)
+	for _, event := range events {
+		encodedEvent, err := json.Marshal(event)
 		if err != nil {
 			return err
 		}
@@ -66,6 +65,7 @@ func produceRatingEvents(topic string, producer *kafka.Producer, events []model.
 		}, nil); err != nil {
 			return err
 		}
+		fmt.Printf("Produces message %v\n", event)
 	}
 	return nil
 }

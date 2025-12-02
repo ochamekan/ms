@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/ochamekan/ms/rating/pkg/model"
 )
 
@@ -43,6 +43,7 @@ func (i *Ingester) Ingest(ctx context.Context) (chan model.RatingEvent, error) {
 				i.consumer.Close()
 				return
 			default:
+
 			}
 			msg, err := i.consumer.ReadMessage(-1)
 			if err != nil {
@@ -57,6 +58,5 @@ func (i *Ingester) Ingest(ctx context.Context) (chan model.RatingEvent, error) {
 			ch <- event
 		}
 	}()
-
 	return ch, nil
 }
