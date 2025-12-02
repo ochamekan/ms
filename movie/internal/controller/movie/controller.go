@@ -19,7 +19,8 @@ type ratingGateway interface {
 }
 
 type metadataGateway interface {
-	Get(ctx context.Context, id string) (*metadatamodel.Metadata, error)
+	GetMetadata(ctx context.Context, id string) (*metadatamodel.Metadata, error)
+	// PutMetadata(ctx context.Context, metadata *metadatamodel.Metadata) error
 }
 
 type Controller struct {
@@ -33,7 +34,7 @@ func New(rg ratingGateway, mg metadataGateway) *Controller {
 
 // Get returns the movie details including the aggreagated rating and movie metadata.
 func (c *Controller) Get(ctx context.Context, id string) (*model.MovieDetails, error) {
-	metadata, err := c.metadataGateway.Get(ctx, id)
+	metadata, err := c.metadataGateway.GetMetadata(ctx, id)
 	if err != nil && errors.Is(err, gateway.ErrNotFound) {
 		return nil, ErrNotFound
 	} else if err != nil {
@@ -52,3 +53,5 @@ func (c *Controller) Get(ctx context.Context, id string) (*model.MovieDetails, e
 
 	return details, nil
 }
+
+// func (c *Controller) Put(ctx context.Context)

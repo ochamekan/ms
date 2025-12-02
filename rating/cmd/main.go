@@ -8,13 +8,14 @@ import (
 	"net"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
 	"github.com/ochamekan/ms/rating/internal/controller/rating"
 	grpchandler "github.com/ochamekan/ms/rating/internal/handler/grpc"
 	"github.com/ochamekan/ms/rating/internal/ingester/kafka"
-	"github.com/ochamekan/ms/rating/internal/repository/memory"
+	"github.com/ochamekan/ms/rating/internal/repository/postgres"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -27,6 +28,11 @@ func main() {
 	flag.Parse()
 
 	log.Printf("Starting the rating service on port %d", port)
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
@@ -51,7 +57,11 @@ func main() {
 	}()
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	repo := memory.New()
+	repo, closer, err := postgres.New()
+	if err != nil {
+		log.Fatalf("fialed to initialize postgres database: %v", err)
+	}
+	defer closer()
 
 	ingester, err := kafka.NewIngester("localhost", "rating", "ratings")
 	if err != nil {
@@ -60,13 +70,13 @@ func main() {
 
 	ctrl := rating.New(repo, ingester)
 
-	if err := ctrl.StartIngestion(ctx); err != nil {
-		log.Fatalf("failed to start ingestion: %v", err)
-	}
+	// if err := ctrl.StartIngestion(ctx); err != nil {
+	// 	log.Fatalf("failed to start ingestion: %v", err)
+	// }
 
 	h := grpchandler.New(ctrl)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}

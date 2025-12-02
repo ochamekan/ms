@@ -17,7 +17,7 @@ func New(registry discovery.Registry) *Gateway {
 	return &Gateway{registry}
 }
 
-func (g *Gateway) GetAggregated(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error) {
+func (g *Gateway) GetAggregatedRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error) {
 	conn, err := grpcutil.ServiceConnection(ctx, "rating", g.registry)
 	if err != nil {
 		return 0, err
@@ -32,4 +32,18 @@ func (g *Gateway) GetAggregated(ctx context.Context, recordID model.RecordID, re
 	}
 
 	return v.RatingValue, nil
+}
+
+func (g *Gateway) PutRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType, rating *model.Rating) error {
+	conn, err := grpcutil.ServiceConnection(ctx, "rating", g.registry)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	client := gen.NewRatingServiceClient(conn)
+
+	_, err = client.PutRating(ctx, &gen.PutRatingRequest{UserId: string(rating.UserID), RecordId: string(rating.RecordID), RecordType: string(rating.RecordType), RatingValue: int32(rating.Value)})
+
+	return err
 }

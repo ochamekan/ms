@@ -10,8 +10,8 @@ import (
 
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/movie/internal/controller/movie"
-	metadatagateway "github.com/ochamekan/ms/movie/internal/gateway/metadata/http"
-	ratinggateway "github.com/ochamekan/ms/movie/internal/gateway/rating/http"
+	metadatagateway "github.com/ochamekan/ms/movie/internal/gateway/metadata/grpc"
+	ratinggateway "github.com/ochamekan/ms/movie/internal/gateway/rating/grpc"
 	grpchandler "github.com/ochamekan/ms/movie/internal/handler/grpc"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"

@@ -63,8 +63,9 @@ func (c *Controller) StartIngestion(ctx context.Context) error {
 
 	for e := range ch {
 		fmt.Printf("Consumed a message: %v\n", e)
-		if err := c.PutRating(ctx, e.RecordID, e.RecordType, &model.Rating{UserID: e.UserID, Value: e.Value}); err != nil {
-			return err
+		if err := c.PutRating(ctx, e.RecordID, e.RecordType, &model.Rating{UserID: e.UserID, Value: e.Value, RecordID: e.RecordID, RecordType: e.RecordType}); err != nil {
+			fmt.Printf("StartIngestion: failed to put rating: %v\n", err)
+			continue
 		}
 	}
 	return nil

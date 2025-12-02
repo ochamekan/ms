@@ -8,10 +8,11 @@ import (
 	"net"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/metadata/internal/controller/metadata"
 	grpchandler "github.com/ochamekan/ms/metadata/internal/handler/grpc"
-	"github.com/ochamekan/ms/metadata/internal/repository/memory"
+	"github.com/ochamekan/ms/metadata/internal/repository/postgres"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
 	"google.golang.org/grpc"
@@ -26,6 +27,11 @@ func main() {
 	flag.Parse()
 
 	log.Printf("Starting the movie metadata service on port %d", port)
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
@@ -50,7 +56,12 @@ func main() {
 	}()
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	repo := memory.New()
+	repo, closer, err := postgres.New()
+	if err != nil {
+		log.Fatalf("failed to initialize postgres database: %v", err)
+	}
+	defer closer()
+
 	ctrl := metadata.New(repo)
 	h := grpchandler.New(ctrl)
 
@@ -58,8 +69,10 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
+
 	srv := grpc.NewServer()
 	reflection.Register(srv)
+
 	gen.RegisterMetadataServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
 		panic(err)

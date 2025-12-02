@@ -13,6 +13,7 @@ var ErrNotFound = errors.New("not found")
 
 type metadataRepository interface {
 	Get(ctx context.Context, id string) (*model.Metadata, error)
+	Put(ctx context.Context, metadata *model.Metadata) error
 }
 
 // Controller defines a metadata service controller.
@@ -26,11 +27,15 @@ func New(repo metadataRepository) *Controller {
 }
 
 // Get returns movie metadata by id.
-func (c *Controller) Get(ctx context.Context, id string) (*model.Metadata, error) {
+func (c *Controller) GetMovieData(ctx context.Context, id string) (*model.Metadata, error) {
 	res, err := c.repo.Get(ctx, id)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		return nil, ErrNotFound
 	}
 
 	return res, err
+}
+
+func (c *Controller) PutMovieData(ctx context.Context, metadata *model.Metadata) error {
+	return c.repo.Put(ctx, metadata)
 }

@@ -25,7 +25,7 @@ func (h *Handler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) 
 	if req == nil || req.MovieId == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty movie id")
 	}
-	m, err := h.ctrl.Get(ctx, req.MovieId)
+	m, err := h.ctrl.GetMovieData(ctx, req.MovieId)
 	if err != nil && errors.Is(err, metadata.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {
@@ -33,4 +33,16 @@ func (h *Handler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) 
 	}
 
 	return &gen.GetMetadataResponse{Metadata: model.MetadataToProto(m)}, nil
+}
+
+func (h *Handler) PutMetadata(ctx context.Context, req *gen.PutMetadataRequest) (*gen.PutMetadataResponse, error) {
+	if req == nil || req.Metadata == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or nil metadata")
+	}
+	err := h.ctrl.PutMovieData(ctx, &model.Metadata{Title: req.Metadata.Title, Description: req.Metadata.Description, Director: req.Metadata.Director})
+	if err != nil {
+		return nil, err
+	}
+
+	return &gen.PutMetadataResponse{}, nil
 }

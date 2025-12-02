@@ -17,7 +17,7 @@ func New(registry discovery.Registry) *Gateway {
 	return &Gateway{registry}
 }
 
-func (g *Gateway) Get(ctx context.Context, id string) (*model.Metadata, error) {
+func (g *Gateway) GetMetadata(ctx context.Context, id string) (*model.Metadata, error) {
 	conn, err := grpcutil.ServiceConnection(ctx, "metadata", g.registry)
 	if err != nil {
 		return nil, err
@@ -32,3 +32,5 @@ func (g *Gateway) Get(ctx context.Context, id string) (*model.Metadata, error) {
 
 	return model.MetadataFromProto(resp.Metadata), nil
 }
+
+// func (g *Gateway) PutMetadata(ctx context.Context, metadata *model.Metadata) error
