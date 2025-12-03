@@ -3,12 +3,13 @@ package rating
 import (
 	"context"
 	"errors"
+	"fmt"
+	"time"
 
 	"github.com/ochamekan/ms/rating/internal/repository"
 	"github.com/ochamekan/ms/rating/pkg/model"
 )
 
-// ErrNotFound is returnes when no ratings are found for a record.
 var ErrNotFound = errors.New("ratings not found for a record")
 
 type ratingRepository interface {
@@ -16,24 +17,31 @@ type ratingRepository interface {
 	Put(ctx context.Context, recordID model.RecordID, recordType model.RecordType, rating *model.Rating) error
 }
 
-type ratingIngester interface {
-	Ingest(ctx context.Context) (chan model.RatingEvent, error)
+type ratingCache interface {
+	GetAggregatedRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error)
+	PutAggregatedRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType, ratingValue float64) error
 }
 
-// Controllen defines a rating service controller.
+// type ratingIngester interface {
+// 	Ingest(ctx context.Context) (chan model.RatingEvent, error)
+// }
+
 type Controller struct {
-	repo ratingRepository
+	repo  ratingRepository
+	cache ratingCache
 	// ingester ratingIngester
 }
 
-// New creates a rating service controller.
-func New(repo ratingRepository) *Controller {
-	return &Controller{repo}
+func New(repo ratingRepository, cache ratingCache) *Controller {
+	return &Controller{repo, cache}
 }
 
-// GetAggregateRating returns the aggregated rating for a
-// record or ErrNotFound if there are no ratings for it.
-func (c *Controller) GetAggregateRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error) {
+func (c *Controller) GetAggregatedRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error) {
+	cachedRes, err := c.cache.GetAggregatedRating(ctx, recordID, recordType)
+	if err == nil {
+		return cachedRes, nil
+	}
+
 	ratings, err := c.repo.Get(ctx, recordID, recordType)
 	if err != nil && err == repository.ErrNotFound {
 		return 0, ErrNotFound
@@ -45,11 +53,18 @@ func (c *Controller) GetAggregateRating(ctx context.Context, recordID model.Reco
 	for _, r := range ratings {
 		sum += float64(r.Value)
 	}
+	// Emulating hard calculations
+	time.Sleep(1 * time.Second)
 
-	return sum / float64(len(ratings)), nil
+	res := sum / float64(len(ratings))
+
+	if err := c.cache.PutAggregatedRating(ctx, recordID, recordType, res); err != nil {
+		fmt.Println("error updating redis cache: " + err.Error())
+	}
+
+	return res, nil
 }
 
-// PutRating writes a rating for a given record.
 func (c *Controller) PutRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType, rating *model.Rating) error {
 	return c.repo.Put(ctx, recordID, recordType, rating)
 }

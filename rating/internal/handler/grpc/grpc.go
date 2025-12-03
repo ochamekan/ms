@@ -25,7 +25,7 @@ func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregate
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty id/type")
 	}
 
-	v, err := h.ctrl.GetAggregateRating(ctx, model.RecordID(req.RecordId), model.RecordType(req.RecordType))
+	v, err := h.ctrl.GetAggregatedRating(ctx, model.RecordID(req.RecordId), model.RecordType(req.RecordType))
 	if err != nil && errors.Is(err, rating.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {

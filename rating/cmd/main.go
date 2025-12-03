@@ -14,6 +14,7 @@ import (
 	"github.com/ochamekan/ms/pkg/discovery"
 	"github.com/ochamekan/ms/rating/internal/controller/rating"
 	grpchandler "github.com/ochamekan/ms/rating/internal/handler/grpc"
+	"github.com/ochamekan/ms/rating/internal/repository/cache"
 	"github.com/ochamekan/ms/rating/internal/repository/postgres"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -67,7 +68,12 @@ func main() {
 	// 	log.Fatalf("failed to initialize ingester: %v", err)
 	// }
 
-	ctrl := rating.New(repo)
+	cache, err := cache.New("rating")
+	if err != nil {
+		log.Fatalf("failed to initialize redis database: %v", err)
+	}
+
+	ctrl := rating.New(repo, cache)
 
 	// if err := ctrl.StartIngestion(ctx); err != nil {
 	// 	log.Fatalf("failed to start ingestion: %v", err)
