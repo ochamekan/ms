@@ -12,6 +12,7 @@ import (
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/metadata/internal/controller/metadata"
 	grpchandler "github.com/ochamekan/ms/metadata/internal/handler/grpc"
+	"github.com/ochamekan/ms/metadata/internal/repository/cache"
 	"github.com/ochamekan/ms/metadata/internal/repository/postgres"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
@@ -62,7 +63,12 @@ func main() {
 	}
 	defer closer()
 
-	ctrl := metadata.New(repo)
+	cache, err := cache.New("metadata")
+	if err != nil {
+		log.Fatalf("failed to initialize redis database: %v", err)
+	}
+
+	ctrl := metadata.New(repo, cache)
 	h := grpchandler.New(ctrl)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
