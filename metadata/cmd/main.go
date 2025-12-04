@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -18,31 +18,40 @@ import (
 	"github.com/ochamekan/ms/pkg/discovery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"gopkg.in/yaml.v3"
 )
 
 const serviceName = "metadata"
 
 func main() {
-	var port int
-	flag.IntVar(&port, "port", 8081, "API handler port")
-	flag.Parse()
+	log.Println("Starting the movie metadata service...")
+	f, err := os.Open("default.yaml")
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
 
-	log.Printf("Starting the movie metadata service on port %d", port)
+	var cfg config
+	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
+		panic(err)
+	}
 
-	err := godotenv.Load()
+	err = godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	registry, err := consul.NewRegistry("localhost:8500")
+	port := cfg.API.Port
+
+	registry, err := consul.NewRegistry(cfg.ServiceDiscovery.Consul.Address)
 	if err != nil {
 		panic(err)
 	}
 
-	ctx := context.Background()
-
 	instanceID := discovery.GenerateInstanceID(serviceName)
-	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
+
+	ctx := context.Background()
+	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("metadata:%d", port)); err != nil {
 		panic(err)
 	}
 
