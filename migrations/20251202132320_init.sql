@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS ratings (
   id serial PRIMARY KEY,
   movie_id integer NOT NULL,
   rating integer NOT NULL,
-  FOREIGN KEY(record_id) REFERENCES movies(id) ON DELETE CASCADE
+  FOREIGN KEY(movie_id) REFERENCES movies(id) ON DELETE CASCADE
 );
 -- +goose StatementEnd
 
