@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ochamekan/ms/metadata/pkg/model"
+	"github.com/ochamekan/ms/metadataservice/pkg/model"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -30,8 +30,8 @@ func New(name string) (*Cache, error) {
 	return &Cache{client, name}, nil
 }
 
-func (c *Cache) Get(ctx context.Context, id string) (*model.Metadata, error) {
-	val, err := c.client.Get(ctx, fmt.Sprintf("%s:%s", c.name, id)).Bytes()
+func (c *Cache) Get(ctx context.Context, id int) (*model.Metadata, error) {
+	val, err := c.client.Get(ctx, fmt.Sprintf("%s:%d", c.name, id)).Bytes()
 	if err != nil {
 		return nil, err
 	}
@@ -51,5 +51,5 @@ func (c *Cache) Put(ctx context.Context, metadata *model.Metadata) error {
 		return err
 	}
 
-	return c.client.Set(ctx, fmt.Sprintf("%s:%s", c.name, metadata.ID), json, 0).Err()
+	return c.client.Set(ctx, fmt.Sprintf("%s:%d", c.name, metadata.ID), json, 0).Err()
 }

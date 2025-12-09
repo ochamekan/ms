@@ -6,8 +6,8 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/ochamekan/ms/metadata/internal/repository"
-	"github.com/ochamekan/ms/metadata/pkg/model"
+	"github.com/ochamekan/ms/metadataservice/internal/repository"
+	"github.com/ochamekan/ms/metadataservice/pkg/model"
 )
 
 type Repository struct {
@@ -27,10 +27,12 @@ func New() (*Repository, func(), error) {
 	return &Repository{dbpool}, closer, nil
 }
 
-func (r *Repository) Get(ctx context.Context, id string) (*model.Metadata, error) {
+func (r *Repository) Get(ctx context.Context, id int) (*model.Metadata, error) {
 	var title, description, director string
+	var year int
+
 	row := r.db.QueryRow(ctx, "SELECT * FROM movies WHERE id = $1", id)
-	err := row.Scan(&title, &description, &director)
+	err := row.Scan(&title, &year, &description, &director)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, repository.ErrNotFound
@@ -40,6 +42,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Metadata, error
 
 	return &model.Metadata{
 		ID:          id,
+		Year:        year,
 		Title:       title,
 		Description: description,
 		Director:    director,
@@ -47,7 +50,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Metadata, error
 }
 
 func (r *Repository) Put(ctx context.Context, metadata *model.Metadata) error {
-	_, err := r.db.Exec(ctx, "INSERT INTO movies (title, description, director) VALUES ($1, $2, $3)", metadata.Title, metadata.Description, metadata.Director)
+	_, err := r.db.Exec(ctx, "INSERT INTO movies (title, year, description, director) VALUES ($1, $2, $3, $4)", metadata.Title, metadata.Year, metadata.Description, metadata.Director)
 	return err
 
 }

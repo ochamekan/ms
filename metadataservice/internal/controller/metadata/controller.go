@@ -5,14 +5,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ochamekan/ms/metadata/internal/repository"
-	"github.com/ochamekan/ms/metadata/pkg/model"
+	"github.com/ochamekan/ms/metadataservice/internal/repository"
+	"github.com/ochamekan/ms/metadataservice/pkg/model"
 )
 
 var ErrNotFound = errors.New("not found")
 
 type metadataRepository interface {
-	Get(ctx context.Context, id string) (*model.Metadata, error)
+	Get(ctx context.Context, id int) (*model.Metadata, error)
 	Put(ctx context.Context, metadata *model.Metadata) error
 }
 
@@ -25,7 +25,7 @@ func New(repo metadataRepository, cache metadataRepository) *Controller {
 	return &Controller{repo, cache}
 }
 
-func (c *Controller) GetMovieData(ctx context.Context, id string) (*model.Metadata, error) {
+func (c *Controller) GetMetadata(ctx context.Context, id int) (*model.Metadata, error) {
 	cachedRes, err := c.cache.Get(ctx, id)
 	if err == nil {
 		return cachedRes, nil

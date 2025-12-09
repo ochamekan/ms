@@ -5,45 +5,33 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"time"
 
 	"github.com/joho/godotenv"
 	"github.com/ochamekan/ms/gen"
-	"github.com/ochamekan/ms/metadata/internal/controller/metadata"
-	grpchandler "github.com/ochamekan/ms/metadata/internal/handler/grpc"
-	"github.com/ochamekan/ms/metadata/internal/repository/cache"
-	"github.com/ochamekan/ms/metadata/internal/repository/postgres"
+	"github.com/ochamekan/ms/metadataservice/internal/controller/metadata"
+	grpchandler "github.com/ochamekan/ms/metadataservice/internal/handler/grpc"
+	"github.com/ochamekan/ms/metadataservice/internal/repository/cache"
+	"github.com/ochamekan/ms/metadataservice/internal/repository/postgres"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
-	"gopkg.in/yaml.v3"
 )
 
-const serviceName = "metadata"
+const (
+	serviceName = "metadata"
+	port        = 8081
+)
 
 func main() {
 	log.Println("Starting the movie metadata service...")
-	f, err := os.Open("default.yaml")
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-
-	var cfg config
-	if err := yaml.NewDecoder(f).Decode(&cfg); err != nil {
-		panic(err)
-	}
-
-	err = godotenv.Load()
+	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
 
-	port := cfg.API.Port
-
-	registry, err := consul.NewRegistry(cfg.ServiceDiscovery.Consul.Address)
+	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
 		panic(err)
 	}
@@ -68,13 +56,13 @@ func main() {
 
 	repo, closer, err := postgres.New()
 	if err != nil {
-		log.Fatalf("failed to initialize postgres database: %v", err)
+		log.Fatalf("Failed to initialize postgresql database: %v", err)
 	}
 	defer closer()
 
-	cache, err := cache.New("metadata")
+	cache, err := cache.New(serviceName)
 	if err != nil {
-		log.Fatalf("failed to initialize redis database: %v", err)
+		log.Fatalf("Failed to initialize redis database: %v", err)
 	}
 
 	ctrl := metadata.New(repo, cache)

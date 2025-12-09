@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/ochamekan/ms/gen"
-	"github.com/ochamekan/ms/metadata/internal/controller/metadata"
-	"github.com/ochamekan/ms/metadata/pkg/model"
+	"github.com/ochamekan/ms/metadataservice/internal/controller/metadata"
+	"github.com/ochamekan/ms/metadataservice/pkg/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -20,12 +20,12 @@ func New(ctrl *metadata.Controller) *Handler {
 	return &Handler{ctrl: ctrl}
 }
 
-// GetMetadata return movie metadata.
 func (h *Handler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) (*gen.GetMetadataResponse, error) {
-	if req == nil || req.MovieId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty movie id")
+	if req == nil || req.Id <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
-	m, err := h.ctrl.GetMovieData(ctx, req.MovieId)
+
+	m, err := h.ctrl.GetMetadata(ctx, int(req.Id))
 	if err != nil && errors.Is(err, metadata.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {
@@ -36,10 +36,10 @@ func (h *Handler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) 
 }
 
 func (h *Handler) PutMetadata(ctx context.Context, req *gen.PutMetadataRequest) (*gen.PutMetadataResponse, error) {
-	if req == nil || req.Metadata == nil {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req or nil metadata")
+	if req == nil || req.Title == "" || req.Description == "" || req.Year <= 0 || req.Director == "" {
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or bad request")
 	}
-	err := h.ctrl.PutMovieData(ctx, &model.Metadata{Title: req.Metadata.Title, Description: req.Metadata.Description, Director: req.Metadata.Director})
+	err := h.ctrl.PutMovieData(ctx, &model.Metadata{Title: req.Title, Description: req.Description, Year: int(req.Year), Director: req.Director})
 	if err != nil {
 		return nil, err
 	}

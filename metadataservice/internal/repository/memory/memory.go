@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/ochamekan/ms/metadata/internal/repository"
-	"github.com/ochamekan/ms/metadata/pkg/model"
+	"github.com/ochamekan/ms/metadataservice/internal/repository"
+	"github.com/ochamekan/ms/metadataservice/pkg/model"
 )
 
 type Repository struct {
@@ -19,7 +19,6 @@ func New() *Repository {
 	}
 }
 
-// Get retrieves movie metadata by movie id.
 func (r *Repository) Get(_ context.Context, id string) (*model.Metadata, error) {
 	r.RLock()
 	defer r.RUnlock()
@@ -32,7 +31,6 @@ func (r *Repository) Get(_ context.Context, id string) (*model.Metadata, error) 
 	return m, nil
 }
 
-// Put adds movie metadata for a given movie id
 func (r *Repository) Put(_ context.Context, id string, metadata *model.Metadata) error {
 	r.Lock()
 	defer r.Unlock()

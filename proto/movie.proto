@@ -1,11 +1,12 @@
 syntax = "proto3";
-option go_package = "/gen";
+option go_package = "./gen";
 
 message Metadata {
-  string id = 1;
+  int32 id = 1;
   string title = 2;
   string description = 3;
-  string director = 4;
+  int32 year = 4;
+  string director = 5;
 }
 
 message MovieDetails {
@@ -18,10 +19,15 @@ service MetadataService {
   rpc PutMetadata(PutMetadataRequest) returns (PutMetadataResponse);
 }
 
-message GetMetadataRequest { string movie_id = 1; }
+message GetMetadataRequest { int32 id = 1; }
 message GetMetadataResponse { Metadata metadata = 1; }
 
-message PutMetadataRequest { Metadata metadata = 1; }
+message PutMetadataRequest {
+  string title = 1;
+  string description = 2;
+  int32 year = 3;
+  string director = 4;
+}
 message PutMetadataResponse {}
 
 service RatingService {
@@ -30,17 +36,12 @@ service RatingService {
   rpc PutRating(PutRatingRequest) returns (PutRatingResponse);
 }
 
-message GetAggregatedRatingRequest {
-  string record_id = 1;
-  string record_type = 2;
-}
-message GetAggregatedRatingResponse { double rating_value = 1; }
+message GetAggregatedRatingRequest { string movie_id = 1; }
+message GetAggregatedRatingResponse { double rating = 1; }
 
 message PutRatingRequest {
-  string user_id = 1;
-  string record_id = 2;
-  string record_type = 3;
-  int32 rating_value = 4;
+  string movie_id = 1;
+  int32 rating = 2;
 }
 message PutRatingResponse {}
 
@@ -49,5 +50,4 @@ service MovieService {
 }
 
 message GetMovieDetailsRequest { string movie_id = 1; }
-
 message GetMovieDetailsResponse { MovieDetails movie_details = 1; }

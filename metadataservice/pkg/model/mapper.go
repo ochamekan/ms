@@ -5,8 +5,9 @@ import "github.com/ochamekan/ms/gen"
 // MetadataToProto converts a Metadata struct into generated proto counterpart.
 func MetadataToProto(m *Metadata) *gen.Metadata {
 	return &gen.Metadata{
-		Id:          m.ID,
+		Id:          int32(m.ID),
 		Title:       m.Title,
+		Year:        int32(m.Year),
 		Description: m.Description,
 		Director:    m.Director,
 	}
@@ -16,8 +17,9 @@ func MetadataToProto(m *Metadata) *gen.Metadata {
 // into a metadata struct.
 func MetadataFromProto(m *gen.Metadata) *Metadata {
 	return &Metadata{
-		ID:          m.Id,
+		ID:          int(m.Id),
 		Title:       m.Title,
+		Year:        int(m.Year),
 		Description: m.Description,
 		Director:    m.Director,
 	}
