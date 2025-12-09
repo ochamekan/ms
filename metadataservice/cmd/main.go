@@ -39,7 +39,7 @@ func main() {
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
 	ctx := context.Background()
-	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("metadata:%d", port)); err != nil {
+	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
 		panic(err)
 	}
 

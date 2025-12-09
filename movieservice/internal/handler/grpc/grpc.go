@@ -5,29 +5,26 @@ import (
 	"errors"
 
 	"github.com/ochamekan/ms/gen"
-	"github.com/ochamekan/ms/metadata/pkg/model"
-	"github.com/ochamekan/ms/movie/internal/controller/movie"
+	"github.com/ochamekan/ms/metadataservice/pkg/model"
+	"github.com/ochamekan/ms/movieservice/internal/controller/movie"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// Handler defines a movie gRPC handler.
 type Handler struct {
 	gen.UnimplementedMovieServiceServer
 	ctrl *movie.Controller
 }
 
-// New creates a new movie gRPC handler.
 func New(ctrl *movie.Controller) *Handler {
 	return &Handler{ctrl: ctrl}
 }
 
-// GetMovieDetails returns moviie details by id.
 func (h *Handler) GetMovieDetails(ctx context.Context, req *gen.GetMovieDetailsRequest) (*gen.GetMovieDetailsResponse, error) {
-	if req == nil || req.MovieId == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty id")
+	if req == nil || req.MovieId <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
-	m, err := h.ctrl.Get(ctx, req.MovieId)
+	m, err := h.ctrl.Get(ctx, int(req.MovieId))
 	if err != nil && errors.Is(err, movie.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {

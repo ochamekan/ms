@@ -6,7 +6,7 @@ import (
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/internal/grpcutil"
 	"github.com/ochamekan/ms/pkg/discovery"
-	"github.com/ochamekan/ms/rating/pkg/model"
+	"github.com/ochamekan/ms/ratingservice/pkg/model"
 )
 
 type Gateway struct {
@@ -17,7 +17,7 @@ func New(registry discovery.Registry) *Gateway {
 	return &Gateway{registry}
 }
 
-func (g *Gateway) GetAggregatedRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType) (float64, error) {
+func (g *Gateway) GetAggregatedRating(ctx context.Context, movieID model.MovieID) (float64, error) {
 	conn, err := grpcutil.ServiceConnection(ctx, "rating", g.registry)
 	if err != nil {
 		return 0, err
@@ -26,15 +26,15 @@ func (g *Gateway) GetAggregatedRating(ctx context.Context, recordID model.Record
 
 	client := gen.NewRatingServiceClient(conn)
 
-	v, err := client.GetAggregatedRating(ctx, &gen.GetAggregatedRatingRequest{RecordId: string(recordID), RecordType: string(recordType)})
+	v, err := client.GetAggregatedRating(ctx, &gen.GetAggregatedRatingRequest{MovieId: int32(movieID)})
 	if err != nil {
 		return 0, err
 	}
 
-	return v.RatingValue, nil
+	return v.Rating, nil
 }
 
-func (g *Gateway) PutRating(ctx context.Context, recordID model.RecordID, recordType model.RecordType, rating *model.Rating) error {
+func (g *Gateway) PutRating(ctx context.Context, movieID model.MovieID, rating model.RatingValue) error {
 	conn, err := grpcutil.ServiceConnection(ctx, "rating", g.registry)
 	if err != nil {
 		return err
@@ -43,7 +43,7 @@ func (g *Gateway) PutRating(ctx context.Context, recordID model.RecordID, record
 
 	client := gen.NewRatingServiceClient(conn)
 
-	_, err = client.PutRating(ctx, &gen.PutRatingRequest{UserId: string(rating.UserID), RecordId: string(rating.RecordID), RecordType: string(rating.RecordType), RatingValue: int32(rating.Value)})
+	_, err = client.PutRating(ctx, &gen.PutRatingRequest{MovieId: int32(movieID), Rating: int32(rating)})
 
 	return err
 }

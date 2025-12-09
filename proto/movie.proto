@@ -49,5 +49,5 @@ service MovieService {
   rpc GetMovieDetails(GetMovieDetailsRequest) returns (GetMovieDetailsResponse);
 }
 
-message GetMovieDetailsRequest { string movie_id = 1; }
+message GetMovieDetailsRequest { int32 movie_id = 1; }
 message GetMovieDetailsResponse { MovieDetails movie_details = 1; }

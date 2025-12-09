@@ -519,7 +519,7 @@ func (*PutRatingResponse) Descriptor() ([]byte, []int) {
 
 type GetMovieDetailsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MovieId       string                 `protobuf:"bytes,1,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
+	MovieId       int32                  `protobuf:"varint,1,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -554,11 +554,11 @@ func (*GetMovieDetailsRequest) Descriptor() ([]byte, []int) {
 	return file_movie_proto_rawDescGZIP(), []int{10}
 }
 
-func (x *GetMovieDetailsRequest) GetMovieId() string {
+func (x *GetMovieDetailsRequest) GetMovieId() int32 {
 	if x != nil {
 		return x.MovieId
 	}
-	return ""
+	return 0
 }
 
 type GetMovieDetailsResponse struct {
@@ -638,7 +638,7 @@ const file_movie_proto_rawDesc = "" +
 	"\x06rating\x18\x02 \x01(\x05R\x06rating\"\x13\n" +
 	"\x11PutRatingResponse\"3\n" +
 	"\x16GetMovieDetailsRequest\x12\x19\n" +
-	"\bmovie_id\x18\x01 \x01(\tR\amovieId\"M\n" +
+	"\bmovie_id\x18\x01 \x01(\x05R\amovieId\"M\n" +
 	"\x17GetMovieDetailsResponse\x122\n" +
 	"\rmovie_details\x18\x01 \x01(\v2\r.MovieDetailsR\fmovieDetails2\x85\x01\n" +
 	"\x0fMetadataService\x128\n" +
