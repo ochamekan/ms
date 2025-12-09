@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/ochamekan/ms/gen"
-	"github.com/ochamekan/ms/rating/internal/controller/rating"
-	"github.com/ochamekan/ms/rating/pkg/model"
+	"github.com/ochamekan/ms/ratingservice/internal/controller/rating"
+	"github.com/ochamekan/ms/ratingservice/pkg/model"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -21,29 +21,28 @@ func New(ctrl *rating.Controller) *Handler {
 }
 
 func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregatedRatingRequest) (*gen.GetAggregatedRatingResponse, error) {
-	if req == nil || req.RecordId == "" || req.RecordType == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty id/type")
+	if req == nil || req.MovieId <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
 
-	v, err := h.ctrl.GetAggregatedRating(ctx, model.RecordID(req.RecordId), model.RecordType(req.RecordType))
+	v, err := h.ctrl.GetAggregatedRating(ctx, model.MovieID(req.MovieId))
 	if err != nil && errors.Is(err, rating.ErrNotFound) {
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &gen.GetAggregatedRatingResponse{RatingValue: v}, nil
+	return &gen.GetAggregatedRatingResponse{Rating: v}, nil
 }
 
 func (h *Handler) PutRating(ctx context.Context, req *gen.PutRatingRequest) (*gen.PutRatingResponse, error) {
-	if req == nil || req.RecordId == "" || req.RecordType == "" {
-		return nil, status.Errorf(codes.InvalidArgument, "nil req or empty user id or record id")
+	if req == nil || req.MovieId <= 0 {
+		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
 
-	if err := h.ctrl.PutRating(ctx, model.RecordID(req.RecordId), model.RecordType(req.RecordType), &model.Rating{RecordID: model.RecordID(req.RecordId), RecordType: model.RecordType(req.RecordType), UserID: model.UserID(req.UserId), Value: model.RatingValue(req.RatingValue)}); err != nil {
+	if err := h.ctrl.PutRating(ctx, model.MovieID(req.MovieId), model.RatingValue(req.Rating)); err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &gen.PutRatingResponse{}, nil
-
 }

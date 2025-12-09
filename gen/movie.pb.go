@@ -343,7 +343,7 @@ func (*PutMetadataResponse) Descriptor() ([]byte, []int) {
 
 type GetAggregatedRatingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MovieId       string                 `protobuf:"bytes,1,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
+	MovieId       int32                  `protobuf:"varint,1,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -378,11 +378,11 @@ func (*GetAggregatedRatingRequest) Descriptor() ([]byte, []int) {
 	return file_movie_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetAggregatedRatingRequest) GetMovieId() string {
+func (x *GetAggregatedRatingRequest) GetMovieId() int32 {
 	if x != nil {
 		return x.MovieId
 	}
-	return ""
+	return 0
 }
 
 type GetAggregatedRatingResponse struct {
@@ -431,7 +431,7 @@ func (x *GetAggregatedRatingResponse) GetRating() float64 {
 
 type PutRatingRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	MovieId       string                 `protobuf:"bytes,1,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
+	MovieId       int32                  `protobuf:"varint,1,opt,name=movie_id,json=movieId,proto3" json:"movie_id,omitempty"`
 	Rating        int32                  `protobuf:"varint,2,opt,name=rating,proto3" json:"rating,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -467,11 +467,11 @@ func (*PutRatingRequest) Descriptor() ([]byte, []int) {
 	return file_movie_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *PutRatingRequest) GetMovieId() string {
+func (x *PutRatingRequest) GetMovieId() int32 {
 	if x != nil {
 		return x.MovieId
 	}
-	return ""
+	return 0
 }
 
 func (x *PutRatingRequest) GetRating() int32 {
@@ -630,11 +630,11 @@ const file_movie_proto_rawDesc = "" +
 	"\bdirector\x18\x04 \x01(\tR\bdirector\"\x15\n" +
 	"\x13PutMetadataResponse\"7\n" +
 	"\x1aGetAggregatedRatingRequest\x12\x19\n" +
-	"\bmovie_id\x18\x01 \x01(\tR\amovieId\"5\n" +
+	"\bmovie_id\x18\x01 \x01(\x05R\amovieId\"5\n" +
 	"\x1bGetAggregatedRatingResponse\x12\x16\n" +
 	"\x06rating\x18\x01 \x01(\x01R\x06rating\"E\n" +
 	"\x10PutRatingRequest\x12\x19\n" +
-	"\bmovie_id\x18\x01 \x01(\tR\amovieId\x12\x16\n" +
+	"\bmovie_id\x18\x01 \x01(\x05R\amovieId\x12\x16\n" +
 	"\x06rating\x18\x02 \x01(\x05R\x06rating\"\x13\n" +
 	"\x11PutRatingResponse\"3\n" +
 	"\x16GetMovieDetailsRequest\x12\x19\n" +

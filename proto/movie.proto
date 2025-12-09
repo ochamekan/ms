@@ -36,11 +36,11 @@ service RatingService {
   rpc PutRating(PutRatingRequest) returns (PutRatingResponse);
 }
 
-message GetAggregatedRatingRequest { string movie_id = 1; }
+message GetAggregatedRatingRequest { int32 movie_id = 1; }
 message GetAggregatedRatingResponse { double rating = 1; }
 
 message PutRatingRequest {
-  string movie_id = 1;
+  int32 movie_id = 1;
   int32 rating = 2;
 }
 message PutRatingResponse {}

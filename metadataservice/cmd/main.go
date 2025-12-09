@@ -25,7 +25,7 @@ const (
 )
 
 func main() {
-	log.Println("Starting the movie metadata service...")
+	log.Println("Starting movie metadata service...")
 	err := godotenv.Load()
 	if err != nil {
 		log.Fatal("Error loading .env file")
