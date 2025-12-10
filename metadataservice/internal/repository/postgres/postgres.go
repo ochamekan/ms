@@ -28,11 +28,10 @@ func New() (*Repository, func(), error) {
 }
 
 func (r *Repository) Get(ctx context.Context, id int) (*model.Metadata, error) {
-	var title, description, director string
-	var year int
+	var m model.Metadata
 
 	row := r.db.QueryRow(ctx, "SELECT * FROM movies WHERE id = $1", id)
-	err := row.Scan(&title, &year, &description, &director)
+	err := row.Scan(&m.ID, &m.Title, &m.Year, &m.Description, &m.Director)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, repository.ErrNotFound
@@ -40,13 +39,7 @@ func (r *Repository) Get(ctx context.Context, id int) (*model.Metadata, error) {
 		return nil, err
 	}
 
-	return &model.Metadata{
-		ID:          id,
-		Year:        year,
-		Title:       title,
-		Description: description,
-		Director:    director,
-	}, nil
+	return &m, nil
 }
 
 func (r *Repository) Put(ctx context.Context, metadata *model.Metadata) error {

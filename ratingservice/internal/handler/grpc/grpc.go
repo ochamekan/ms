@@ -21,7 +21,7 @@ func New(ctrl *rating.Controller) *Handler {
 }
 
 func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregatedRatingRequest) (*gen.GetAggregatedRatingResponse, error) {
-	if req == nil || req.MovieId <= 0 {
+	if req == nil || req.MovieId < 0 {
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
 

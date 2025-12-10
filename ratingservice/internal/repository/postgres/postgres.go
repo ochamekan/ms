@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/ochamekan/ms/ratingservice/internal/repository"
 	"github.com/ochamekan/ms/ratingservice/pkg/model"
 )
 
@@ -40,6 +41,10 @@ func (r *Repository) Get(ctx context.Context, movieID model.MovieID) ([]model.Ra
 			return nil, err
 		}
 		ratings = append(ratings, r)
+	}
+
+	if len(ratings) == 0 {
+		return nil, repository.ErrNotFound
 	}
 
 	return ratings, nil

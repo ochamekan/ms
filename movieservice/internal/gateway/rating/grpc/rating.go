@@ -26,12 +26,12 @@ func (g *Gateway) GetAggregatedRating(ctx context.Context, movieID model.MovieID
 
 	client := gen.NewRatingServiceClient(conn)
 
-	v, err := client.GetAggregatedRating(ctx, &gen.GetAggregatedRatingRequest{MovieId: int32(movieID)})
+	resp, err := client.GetAggregatedRating(ctx, &gen.GetAggregatedRatingRequest{MovieId: int32(movieID)})
 	if err != nil {
 		return 0, err
 	}
 
-	return v.Rating, nil
+	return resp.Rating, nil
 }
 
 func (g *Gateway) PutRating(ctx context.Context, movieID model.MovieID, rating model.RatingValue) error {

@@ -45,6 +45,10 @@ func (c *Controller) GetAggregatedRating(ctx context.Context, movieID model.Movi
 	}
 
 	sum := float64(0)
+	if len(ratings) == 0 {
+		return 0, nil
+	}
+
 	for _, r := range ratings {
 		sum += float64(r.Rating)
 	}

@@ -34,6 +34,8 @@ func (c *Controller) GetMetadata(ctx context.Context, id int) (*model.Metadata, 
 	res, err := c.repo.Get(ctx, id)
 	if err != nil && errors.Is(err, repository.ErrNotFound) {
 		return nil, ErrNotFound
+	} else if err != nil {
+		return nil, err
 	}
 
 	if err := c.cache.Put(ctx, res); err != nil {

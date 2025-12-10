@@ -99,7 +99,7 @@ func (x *Metadata) GetDirector() string {
 
 type MovieDetails struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Rating        float64                `protobuf:"fixed64,1,opt,name=rating,proto3" json:"rating,omitempty"`
+	Rating        *float64               `protobuf:"fixed64,1,opt,name=rating,proto3,oneof" json:"rating,omitempty"`
 	Metadata      *Metadata              `protobuf:"bytes,2,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -136,8 +136,8 @@ func (*MovieDetails) Descriptor() ([]byte, []int) {
 }
 
 func (x *MovieDetails) GetRating() float64 {
-	if x != nil {
-		return x.Rating
+	if x != nil && x.Rating != nil {
+		return *x.Rating
 	}
 	return 0
 }
@@ -615,10 +615,11 @@ const file_movie_proto_rawDesc = "" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12 \n" +
 	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x12\n" +
 	"\x04year\x18\x04 \x01(\x05R\x04year\x12\x1a\n" +
-	"\bdirector\x18\x05 \x01(\tR\bdirector\"M\n" +
-	"\fMovieDetails\x12\x16\n" +
-	"\x06rating\x18\x01 \x01(\x01R\x06rating\x12%\n" +
-	"\bmetadata\x18\x02 \x01(\v2\t.MetadataR\bmetadata\"$\n" +
+	"\bdirector\x18\x05 \x01(\tR\bdirector\"]\n" +
+	"\fMovieDetails\x12\x1b\n" +
+	"\x06rating\x18\x01 \x01(\x01H\x00R\x06rating\x88\x01\x01\x12%\n" +
+	"\bmetadata\x18\x02 \x01(\v2\t.MetadataR\bmetadataB\t\n" +
+	"\a_rating\"$\n" +
 	"\x12GetMetadataRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x05R\x02id\"<\n" +
 	"\x13GetMetadataResponse\x12%\n" +
@@ -703,6 +704,7 @@ func file_movie_proto_init() {
 	if File_movie_proto != nil {
 		return
 	}
+	file_movie_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
