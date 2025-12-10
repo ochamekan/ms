@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/metadataservice/pkg/model"
@@ -30,6 +31,8 @@ func (h *Handler) GetMovieDetails(ctx context.Context, req *gen.GetMovieDetailsR
 	} else if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	fmt.Println("handler rating: ", m.Rating)
 
 	return &gen.GetMovieDetailsResponse{
 		MovieDetails: &gen.MovieDetails{
