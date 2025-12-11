@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -37,7 +41,9 @@ func main() {
 		panic(err)
 	}
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
@@ -77,8 +83,22 @@ func main() {
 	srv := grpc.NewServer()
 	reflection.Register(srv)
 
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
+		s := <-sigChan
+		log.Printf("Received signal %v, attempting graceful shutdown", s)
+		cancel()
+		srv.GracefulStop()
+		log.Println("Gracefully stopped the gRPC server")
+	})
+
 	gen.RegisterRatingServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
+
+	wg.Wait()
 }

@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
@@ -35,7 +39,9 @@ func main() {
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
-	ctx := context.Background()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
 		panic(err)
 	}
@@ -62,12 +68,24 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	const limit = 100
-	const burst = 100
+	const limit = 100 // max 100 request per second
+	const burst = 100 // max parallel requests
 	lim := newLimiter(limit, burst)
 
 	srv := grpc.NewServer(grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(lim)))
 	reflection.Register(srv)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+	var wg sync.WaitGroup
+
+	wg.Go(func() {
+		s := <-sigChan
+		log.Printf("Received signal %v, attempting graceful shutdown", s)
+		cancel()
+		srv.GracefulStop()
+		log.Println("Gracefully stopped the gRPC server")
+	})
 
 	gen.RegisterMovieServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
@@ -75,6 +93,7 @@ func main() {
 	}
 }
 
+// limiter implements *ratelimit.Limiter
 type limiter struct {
 	l *rate.Limiter
 }
