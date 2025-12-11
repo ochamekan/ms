@@ -7,6 +7,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/movieservice/internal/controller/movie"
 	metadatagateway "github.com/ochamekan/ms/movieservice/internal/gateway/metadata/grpc"
@@ -14,6 +15,7 @@ import (
 	grpchandler "github.com/ochamekan/ms/movieservice/internal/handler/grpc"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
+	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -60,11 +62,27 @@ func main() {
 		log.Fatalf("Failed to listen: %v", err)
 	}
 
-	srv := grpc.NewServer()
+	const limit = 100
+	const burst = 100
+	lim := newLimiter(limit, burst)
+
+	srv := grpc.NewServer(grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(lim)))
 	reflection.Register(srv)
 
 	gen.RegisterMovieServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
+}
+
+type limiter struct {
+	l *rate.Limiter
+}
+
+func newLimiter(limit int, burst int) *limiter {
+	return &limiter{rate.NewLimiter(rate.Limit(limit), burst)}
+}
+
+func (l *limiter) Limit() bool {
+	return l.l.Allow()
 }

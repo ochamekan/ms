@@ -3,10 +3,12 @@ module github.com/ochamekan/ms
 go 1.25.4
 
 require (
+	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0
 	github.com/hashicorp/consul/api v1.33.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/joho/godotenv v1.5.1
 	github.com/redis/go-redis/v9 v9.17.2
+	golang.org/x/time v0.14.0
 	google.golang.org/grpc v1.77.0
 	google.golang.org/protobuf v1.36.10
 )
