@@ -8,19 +8,23 @@ import (
 	"github.com/ochamekan/ms/internal/grpcutil"
 	"github.com/ochamekan/ms/metadataservice/pkg/model"
 	"github.com/ochamekan/ms/pkg/discovery"
+	"github.com/ochamekan/ms/pkg/logging"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 type Gateway struct {
 	registry discovery.Registry
+	logger   *zap.Logger
 }
 
-func New(registry discovery.Registry) *Gateway {
-	return &Gateway{registry}
+func New(registry discovery.Registry, logger *zap.Logger) *Gateway {
+	return &Gateway{registry, logger.With(zap.String(logging.FieldComponent, "movie service metadata gateway"))}
 }
 
 func (g *Gateway) GetMetadata(ctx context.Context, id int) (*model.Metadata, error) {
+	logger := g.logger.With(zap.String(logging.FieldEndpoint, "GetMetadata"))
 	conn, err := grpcutil.ServiceConnection(ctx, "metadata", g.registry)
 	if err != nil {
 		return nil, err
@@ -32,10 +36,11 @@ func (g *Gateway) GetMetadata(ctx context.Context, id int) (*model.Metadata, err
 
 	// If error is retriable, try 5 times and if no success return err
 	const maxRetries = 5
-	for range 5 {
+	for i := range 5 {
 		resp, err = client.GetMetadata(ctx, &gen.GetMetadataRequest{Id: int32(id)})
 		if err != nil {
 			if shouldRetry(err) {
+				logger.Warn("Failed to get metadata", zap.Int("attempt number", i+1), zap.Error(err))
 				continue
 			}
 			return nil, err

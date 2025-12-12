@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -19,6 +18,8 @@ import (
 	grpchandler "github.com/ochamekan/ms/movieservice/internal/handler/grpc"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
+	"github.com/ochamekan/ms/pkg/logging"
+	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -30,11 +31,14 @@ const (
 )
 
 func main() {
-	log.Println("Starting movie service...")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	logger = logger.With(zap.String(logging.FieldService, serviceName))
+	logger.Info("Starting movie service")
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Failed to create consul registry", zap.Error(err))
 	}
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
@@ -43,13 +47,13 @@ func main() {
 	defer cancel()
 
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
-		panic(err)
+		logger.Fatal("Failed to register instance", zap.Error(err))
 	}
 
 	go func() {
 		for {
 			if err := registry.ReportHealthyState(instanceID, serviceName); err != nil {
-				log.Println("Failed to report healthy state: " + err.Error())
+				logger.Error("Failed to report healthy state", zap.Error(err))
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -57,15 +61,15 @@ func main() {
 	}()
 	defer registry.Deregister(ctx, instanceID, serviceName)
 
-	metadataGateway := metadatagateway.New(registry)
+	metadataGateway := metadatagateway.New(registry, logger)
 	ratingGateway := ratinggateway.New(registry)
 	ctrl := movie.New(ratingGateway, metadataGateway)
 
-	h := grpchandler.New(ctrl)
+	h := grpchandler.New(ctrl, logger)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatal("Failed to listen", zap.Error(err))
 	}
 
 	const limit = 100 // max 100 request per second
@@ -81,15 +85,15 @@ func main() {
 
 	wg.Go(func() {
 		s := <-sigChan
-		log.Printf("Received signal %v, attempting graceful shutdown", s)
+		logger.Info("Received signal, attempting graceful shutdown", zap.Stringer("signal", s))
 		cancel()
 		srv.GracefulStop()
-		log.Println("Gracefully stopped the gRPC server")
+		logger.Info("Gracefully stopped the gRPC server for movie service")
 	})
 
 	gen.RegisterMovieServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
-		panic(err)
+		logger.Fatal("Failed to serve", zap.Error(err))
 	}
 
 	wg.Wait()
