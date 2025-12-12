@@ -76,7 +76,7 @@ func main() {
 	const burst = 100 // max parallel requests
 	lim := newLimiter(limit, burst)
 
-	srv := grpc.NewServer(grpc.UnaryInterceptor(ratelimit.UnaryServerInterceptor(lim)))
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(ratelimit.UnaryServerInterceptor(lim)))
 	reflection.Register(srv)
 
 	sigChan := make(chan os.Signal, 1)
@@ -109,5 +109,5 @@ func newLimiter(limit int, burst int) *limiter {
 }
 
 func (l *limiter) Limit() bool {
-	return l.l.Allow()
+	return !l.l.Allow()
 }

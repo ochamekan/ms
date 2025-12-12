@@ -20,7 +20,7 @@ type Handler struct {
 }
 
 func New(ctrl *movie.Controller, logger *zap.Logger) *Handler {
-	return &Handler{ctrl: ctrl, logger: logger.With(zap.String(logging.FieldComponent, "movie service"))}
+	return &Handler{ctrl: ctrl, logger: logger.With(zap.String(logging.FieldComponent, "movie handler"))}
 }
 
 func (h *Handler) GetMovieDetails(ctx context.Context, req *gen.GetMovieDetailsRequest) (*gen.GetMovieDetailsResponse, error) {
