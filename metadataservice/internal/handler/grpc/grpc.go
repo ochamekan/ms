@@ -26,7 +26,7 @@ func New(ctrl *metadata.Controller, logger *zap.Logger) *Handler {
 func (h *Handler) GetMetadata(ctx context.Context, req *gen.GetMetadataRequest) (*gen.GetMetadataResponse, error) {
 	logger := h.logger.With(zap.String(logging.FieldEndpoint, "GetMetadata"))
 	if req == nil || req.Id <= 0 {
-		logger.Warn("Nil request or incorrect movie id")
+		logger.Warn("nil request or incorrect movie id")
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
 

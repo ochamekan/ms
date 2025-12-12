@@ -51,7 +51,7 @@ func main() {
 	defer cancel()
 
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
-		logger.Panic("Failed to register instance", zap.Error(err))
+		logger.Fatal("Failed to register instance", zap.Error(err))
 	}
 
 	go func() {
@@ -96,11 +96,13 @@ func main() {
 		logger.Info("Received signal, attempting graceful shutdown", zap.Stringer("signal", s))
 		cancel()
 		srv.GracefulStop()
-		logger.Info("Gracefully stopped the gRPC server")
+		logger.Info("Gracefully stopped the gRPC server for metadata service")
 	})
 
 	gen.RegisterMetadataServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
-		logger.Panic("Failed to serve", zap.Error(err))
+		logger.Fatal("Failed to serve", zap.Error(err))
 	}
+
+	wg.Wait()
 }

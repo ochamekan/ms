@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -15,10 +14,12 @@ import (
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
+	"github.com/ochamekan/ms/pkg/logging"
 	"github.com/ochamekan/ms/ratingservice/internal/controller/rating"
 	grpchandler "github.com/ochamekan/ms/ratingservice/internal/handler/grpc"
 	"github.com/ochamekan/ms/ratingservice/internal/repository/cache"
 	"github.com/ochamekan/ms/ratingservice/internal/repository/postgres"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -29,16 +30,19 @@ const (
 )
 
 func main() {
-	log.Println("Starting rating service...")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	logger = logger.With(zap.String(logging.FieldService, serviceName))
+	logger.Info("Starting rating service")
 
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logger.Fatal("Error loading .env file", zap.Error(err))
 	}
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Failed to create consul registry", zap.Error(err))
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -47,13 +51,13 @@ func main() {
 	instanceID := discovery.GenerateInstanceID(serviceName)
 
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
-		panic(err)
+		logger.Fatal("Failed to register instance", zap.Error(err))
 	}
 
 	go func() {
 		for {
 			if err := registry.ReportHealthyState(instanceID, serviceName); err != nil {
-				log.Println("Failed to report healthy state: " + err.Error())
+				logger.Error("Failed to report healthy state", zap.Error(err))
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -62,22 +66,22 @@ func main() {
 
 	repo, closer, err := postgres.New()
 	if err != nil {
-		log.Fatalf("Failed to initialize postgresql database: %v", err)
+		logger.Fatal("Failed to initialize postgresql database", zap.Error(err))
 	}
 	defer closer()
 
 	cache, err := cache.New(serviceName)
 	if err != nil {
-		log.Fatalf("Failed to initialize redis database: %v", err)
+		logger.Fatal("Failed to initialize redis database", zap.Error(err))
 	}
 
-	ctrl := rating.New(repo, cache)
+	ctrl := rating.New(repo, cache, logger)
 
-	h := grpchandler.New(ctrl)
+	h := grpchandler.New(ctrl, logger)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
 	if err != nil {
-		log.Fatalf("Failed to listen: %v", err)
+		logger.Fatal("Failed to listen", zap.Error(err))
 	}
 
 	srv := grpc.NewServer()
@@ -89,15 +93,15 @@ func main() {
 
 	wg.Go(func() {
 		s := <-sigChan
-		log.Printf("Received signal %v, attempting graceful shutdown", s)
+		logger.Info("Received signal, attempting graceful shutdown", zap.Stringer("signal", s))
 		cancel()
 		srv.GracefulStop()
-		log.Println("Gracefully stopped the gRPC server")
+		logger.Info("Gracefully stopped the gRPC server for rating service")
 	})
 
 	gen.RegisterRatingServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
-		panic(err)
+		logger.Fatal("Failed to serve", zap.Error(err))
 	}
 
 	wg.Wait()

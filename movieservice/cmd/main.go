@@ -91,6 +91,8 @@ func main() {
 	if err := srv.Serve(lis); err != nil {
 		panic(err)
 	}
+
+	wg.Wait()
 }
 
 // limiter implements *ratelimit.Limiter

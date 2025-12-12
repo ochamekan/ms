@@ -3,11 +3,12 @@ package rating
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
+	"github.com/ochamekan/ms/pkg/logging"
 	"github.com/ochamekan/ms/ratingservice/internal/repository"
 	"github.com/ochamekan/ms/ratingservice/pkg/model"
+	"go.uber.org/zap"
 )
 
 var ErrNotFound = errors.New("ratings not found for a record")
@@ -23,15 +24,17 @@ type ratingCache interface {
 }
 
 type Controller struct {
-	repo  ratingRepository
-	cache ratingCache
+	repo   ratingRepository
+	cache  ratingCache
+	logger *zap.Logger
 }
 
-func New(repo ratingRepository, cache ratingCache) *Controller {
-	return &Controller{repo, cache}
+func New(repo ratingRepository, cache ratingCache, logger *zap.Logger) *Controller {
+	return &Controller{repo, cache, logger.With(zap.String(logging.FieldComponent, "rating controller"))}
 }
 
 func (c *Controller) GetAggregatedRating(ctx context.Context, movieID model.MovieID) (float64, error) {
+	logger := c.logger.With(zap.String(logging.FieldEndpoint, "GetAggregatedRating"))
 	cachedRes, err := c.cache.GetAggregatedRating(ctx, movieID)
 	if err == nil {
 		return cachedRes, nil
@@ -59,7 +62,7 @@ func (c *Controller) GetAggregatedRating(ctx context.Context, movieID model.Movi
 	res := sum / float64(len(ratings))
 
 	if err := c.cache.PutAggregatedRating(ctx, movieID, res); err != nil {
-		fmt.Println("error updating redis cache: " + err.Error())
+		logger.Error("Failed to update redis cache", zap.Error(err))
 	}
 
 	return res, nil
