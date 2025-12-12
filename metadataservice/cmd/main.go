@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -19,6 +18,8 @@ import (
 	"github.com/ochamekan/ms/metadataservice/internal/repository/postgres"
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
+	"github.com/ochamekan/ms/pkg/logging"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -29,15 +30,19 @@ const (
 )
 
 func main() {
-	log.Println("Starting movie metadata service...")
+	logger, _ := zap.NewProduction()
+	defer logger.Sync()
+	logger = logger.With(zap.String(logging.FieldService, serviceName))
+	logger.Info("Starting movie metadata service")
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		logger.Fatal("Error loading .env file", zap.Error(err))
 	}
 
 	registry, err := consul.NewRegistry("localhost:8500")
 	if err != nil {
-		panic(err)
+		logger.Fatal("Failed to create consul registry", zap.Error(err))
 	}
 
 	instanceID := discovery.GenerateInstanceID(serviceName)
@@ -46,13 +51,13 @@ func main() {
 	defer cancel()
 
 	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
-		panic(err)
+		logger.Panic("Failed to register instance", zap.Error(err))
 	}
 
 	go func() {
 		for {
 			if err := registry.ReportHealthyState(instanceID, serviceName); err != nil {
-				log.Println("Failed to report healthy state: " + err.Error())
+				logger.Error("Failed to report healthy state", zap.Error(err))
 			}
 			time.Sleep(1 * time.Second)
 		}
@@ -62,21 +67,21 @@ func main() {
 
 	repo, closer, err := postgres.New()
 	if err != nil {
-		log.Fatalf("Failed to initialize postgresql database: %v", err)
+		logger.Fatal("Failed to initialize postgresql database", zap.Error(err))
 	}
 	defer closer()
 
 	cache, err := cache.New(serviceName)
 	if err != nil {
-		log.Fatalf("Failed to initialize redis database: %v", err)
+		logger.Fatal("Failed to initialize redis database", zap.Error(err))
 	}
 
-	ctrl := metadata.New(repo, cache)
-	h := grpchandler.New(ctrl)
+	ctrl := metadata.New(repo, cache, logger)
+	h := grpchandler.New(ctrl, logger)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal("Failed to listen", zap.Error(err))
 	}
 
 	srv := grpc.NewServer()
@@ -88,14 +93,14 @@ func main() {
 
 	wg.Go(func() {
 		s := <-sigChan
-		log.Printf("Received signal %v, attempting graceful shutdown", s)
+		logger.Info("Received signal, attempting graceful shutdown", zap.Stringer("signal", s))
 		cancel()
 		srv.GracefulStop()
-		log.Println("Gracefully stopped the gRPC server")
+		logger.Info("Gracefully stopped the gRPC server")
 	})
 
 	gen.RegisterMetadataServiceServer(srv, h)
 	if err := srv.Serve(lis); err != nil {
-		panic(err)
+		logger.Panic("Failed to serve", zap.Error(err))
 	}
 }

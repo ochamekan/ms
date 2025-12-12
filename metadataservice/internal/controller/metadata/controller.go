@@ -3,10 +3,11 @@ package metadata
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/ochamekan/ms/metadataservice/internal/repository"
 	"github.com/ochamekan/ms/metadataservice/pkg/model"
+	"github.com/ochamekan/ms/pkg/logging"
+	"go.uber.org/zap"
 )
 
 var ErrNotFound = errors.New("not found")
@@ -17,15 +18,17 @@ type metadataRepository interface {
 }
 
 type Controller struct {
-	repo  metadataRepository
-	cache metadataRepository
+	repo   metadataRepository
+	cache  metadataRepository
+	logger *zap.Logger
 }
 
-func New(repo metadataRepository, cache metadataRepository) *Controller {
-	return &Controller{repo, cache}
+func New(repo metadataRepository, cache metadataRepository, logger *zap.Logger) *Controller {
+	return &Controller{repo, cache, logger.With(zap.String(logging.FieldComponent, "metadata controller"))}
 }
 
 func (c *Controller) GetMetadata(ctx context.Context, id int) (*model.Metadata, error) {
+	logger := c.logger.With(zap.String(logging.FieldEndpoint, "GetMetadata"))
 	cachedRes, err := c.cache.Get(ctx, id)
 	if err == nil {
 		return cachedRes, nil
@@ -39,7 +42,7 @@ func (c *Controller) GetMetadata(ctx context.Context, id int) (*model.Metadata, 
 	}
 
 	if err := c.cache.Put(ctx, res); err != nil {
-		fmt.Println("error updating redis cache: " + err.Error())
+		logger.Error("Failed to update redis cache", zap.Error(err))
 	}
 
 	return res, err
