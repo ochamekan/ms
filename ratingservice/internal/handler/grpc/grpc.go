@@ -33,7 +33,7 @@ func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregate
 	logger.Info("Getting all ratings")
 	v, err := h.ctrl.GetAggregatedRating(ctx, model.MovieID(req.MovieId))
 	if err != nil && errors.Is(err, rating.ErrNotFound) {
-		logger.Error("Failed to get ratings", zap.Error(err))
+		logger.Warn("Failed to get ratings", zap.Error(err))
 		return nil, status.Error(codes.NotFound, err.Error())
 	} else if err != nil {
 		logger.Error("Faield to get ratings", zap.Error(err))

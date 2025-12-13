@@ -36,7 +36,7 @@ func main() {
 	logger = logger.With(zap.String(logging.FieldService, serviceName))
 	logger.Info("Starting movie service")
 
-	registry, err := consul.NewRegistry("localhost:8500")
+	registry, err := consul.NewRegistry("discovery:8500")
 	if err != nil {
 		logger.Fatal("Failed to create consul registry", zap.Error(err))
 	}
@@ -46,7 +46,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
+	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("movie:%d", port)); err != nil {
 		logger.Fatal("Failed to register instance", zap.Error(err))
 	}
 
@@ -67,7 +67,7 @@ func main() {
 
 	h := grpchandler.New(ctrl, logger)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%d", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
 		logger.Fatal("Failed to listen", zap.Error(err))
 	}

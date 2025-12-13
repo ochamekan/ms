@@ -40,7 +40,7 @@ func main() {
 		logger.Fatal("Error loading .env file", zap.Error(err))
 	}
 
-	registry, err := consul.NewRegistry("localhost:8500")
+	registry, err := consul.NewRegistry("discovery:8500")
 	if err != nil {
 		logger.Fatal("Failed to create consul registry", zap.Error(err))
 	}
@@ -50,7 +50,7 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("localhost:%d", port)); err != nil {
+	if err := registry.Register(ctx, instanceID, serviceName, fmt.Sprintf("metadata:%d", port)); err != nil {
 		logger.Fatal("Failed to register instance", zap.Error(err))
 	}
 
@@ -79,7 +79,7 @@ func main() {
 	ctrl := metadata.New(repo, cache, logger)
 	h := grpchandler.New(ctrl, logger)
 
-	lis, err := net.Listen("tcp", fmt.Sprintf("localhost:%v", port))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%v", port))
 	if err != nil {
 		logger.Fatal("Failed to listen", zap.Error(err))
 	}
