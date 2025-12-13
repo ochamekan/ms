@@ -30,13 +30,13 @@ func (h *Handler) GetAggregatedRating(ctx context.Context, req *gen.GetAggregate
 		return nil, status.Errorf(codes.InvalidArgument, "nil req or incorrect movie id")
 	}
 
-	logger.Info("Getting all ratings")
+	logger.Info("Getting aggregated rating")
 	v, err := h.ctrl.GetAggregatedRating(ctx, model.MovieID(req.MovieId))
 	if err != nil && errors.Is(err, rating.ErrNotFound) {
-		logger.Warn("Failed to get ratings", zap.Error(err))
-		return nil, status.Error(codes.NotFound, err.Error())
+		logger.Warn("Failed to get rating", zap.Error(err))
+		return &gen.GetAggregatedRatingResponse{Rating: 0}, nil
 	} else if err != nil {
-		logger.Error("Faield to get ratings", zap.Error(err))
+		logger.Error("Faield to get rating", zap.Error(err))
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
