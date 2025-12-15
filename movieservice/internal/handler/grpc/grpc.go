@@ -8,6 +8,7 @@ import (
 	"github.com/ochamekan/ms/metadataservice/pkg/model"
 	"github.com/ochamekan/ms/movieservice/internal/controller/movie"
 	"github.com/ochamekan/ms/pkg/logging"
+	"github.com/ochamekan/ms/pkg/metrics"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -15,15 +16,18 @@ import (
 
 type Handler struct {
 	gen.UnimplementedMovieServiceServer
-	ctrl   *movie.Controller
-	logger *zap.Logger
+	ctrl    *movie.Controller
+	logger  *zap.Logger
+	metrics *metrics.Metrics
 }
 
-func New(ctrl *movie.Controller, logger *zap.Logger) *Handler {
-	return &Handler{ctrl: ctrl, logger: logger.With(zap.String(logging.FieldComponent, "movie handler"))}
+func New(ctrl *movie.Controller, logger *zap.Logger, metrics *metrics.Metrics) *Handler {
+	return &Handler{ctrl: ctrl, logger: logger.With(zap.String(logging.FieldComponent, "movie handler")), metrics: metrics}
 }
 
 func (h *Handler) GetMovieDetails(ctx context.Context, req *gen.GetMovieDetailsRequest) (*gen.GetMovieDetailsResponse, error) {
+	h.metrics.ObserveTotalCalls("GetMovieDetails")
+
 	logger := h.logger.With(zap.String(logging.FieldEndpoint, "GetMovieDetails"))
 	if req == nil || req.MovieId <= 0 {
 		logger.Warn("nil request or incorrect movie id")

@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
 
+	grpcprom "github.com/grpc-ecosystem/go-grpc-middleware/providers/prometheus"
 	"github.com/grpc-ecosystem/go-grpc-middleware/ratelimit"
 	"github.com/ochamekan/ms/gen"
 	"github.com/ochamekan/ms/movieservice/internal/controller/movie"
@@ -19,6 +21,9 @@ import (
 	"github.com/ochamekan/ms/pkg/consul"
 	"github.com/ochamekan/ms/pkg/discovery"
 	"github.com/ochamekan/ms/pkg/logging"
+	"github.com/ochamekan/ms/pkg/metrics"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
@@ -28,6 +33,7 @@ import (
 const (
 	serviceName = "movie"
 	port        = 8083
+	metricsPort = 9100
 )
 
 func main() {
@@ -35,6 +41,25 @@ func main() {
 	defer logger.Sync()
 	logger = logger.With(zap.String(logging.FieldService, serviceName))
 	logger.Info("Starting movie service")
+
+	/////////////////////////////
+	// PROMETHEUS
+	srvMetrics := grpcprom.NewServerMetrics(
+		grpcprom.WithServerHandlingTimeHistogram(
+			grpcprom.WithHistogramBuckets([]float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}),
+		),
+	)
+
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(srvMetrics)
+
+	metrics := metrics.New(reg)
+
+	go func() {
+		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
+		http.ListenAndServe(fmt.Sprintf(":%d", metricsPort), nil)
+	}()
+	/////////////////////////////
 
 	registry, err := consul.NewRegistry("discovery:8500")
 	if err != nil {
@@ -65,7 +90,7 @@ func main() {
 	ratingGateway := ratinggateway.New(registry)
 	ctrl := movie.New(ratingGateway, metadataGateway)
 
-	h := grpchandler.New(ctrl, logger)
+	h := grpchandler.New(ctrl, logger, metrics)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
 	if err != nil {
@@ -76,11 +101,18 @@ func main() {
 	const burst = 100 // max parallel requests
 	lim := newLimiter(limit, burst)
 
-	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(ratelimit.UnaryServerInterceptor(lim)))
+	srv := grpc.NewServer(grpc.ChainUnaryInterceptor(
+		srvMetrics.UnaryServerInterceptor(),
+		ratelimit.UnaryServerInterceptor(lim),
+	))
+
 	reflection.Register(srv)
 
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	srvMetrics.InitializeMetrics(srv)
+
 	var wg sync.WaitGroup
 
 	wg.Go(func() {
