@@ -42,8 +42,6 @@ func main() {
 	logger = logger.With(zap.String(logging.FieldService, serviceName))
 	logger.Info("Starting movie service")
 
-	/////////////////////////////
-	// PROMETHEUS
 	srvMetrics := grpcprom.NewServerMetrics(
 		grpcprom.WithServerHandlingTimeHistogram(
 			grpcprom.WithHistogramBuckets([]float64{0.001, 0.01, 0.1, 0.3, 0.6, 1, 3, 6, 9, 20, 30, 60, 90, 120}),
@@ -59,7 +57,6 @@ func main() {
 		http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 		http.ListenAndServe(fmt.Sprintf(":%d", metricsPort), nil)
 	}()
-	/////////////////////////////
 
 	registry, err := consul.NewRegistry("discovery:8500")
 	if err != nil {

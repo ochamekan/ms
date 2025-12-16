@@ -111,6 +111,7 @@ services:
       - GF_AUTH_BASIC_ENABLED=false
     volumes:
       - ./configs/datasources.yaml:/etc/grafana/provisioning/datasources/ds.yaml
+      - ./configs/grafana/dashboards:/var/lib/grafana/dashboards
     ports:
       - 3000:3000/tcp
     networks:
